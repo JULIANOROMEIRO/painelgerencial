@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  gerenciador-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gerenciador-visitas-hostinger
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - gerenciador-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gerenciador.rule=Host(`seu-dominio.hostinger.com`)"
+      - "traefik.http.services.gerenciador.loadbalancer.server.port=3000"
+
+networks:
+  gerenciador-network:
+    driver: bridge

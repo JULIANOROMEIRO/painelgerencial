@@ -1,0 +1,77 @@
+# Dockerfile Otimizado para Produção
+# Baseado em Node.js 18 Alpine para menor tamanho
+
+FROM node:18-alpine AS base
+
+# Instalar dependências do sistema necessárias
+RUN apk add --no-cache libc6-compat curl
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
+
+# ===== STAGE 1: Instalar dependências =====
+FROM base AS deps
+
+# Copiar arquivos de configuração de dependências
+COPY package.json pnpm-lock.yaml* ./
+
+# Instalar dependências (incluindo devDependencies para build)
+RUN pnpm install --frozen-lockfile
+
+# ===== STAGE 2: Build da aplicação =====
+FROM base AS builder
+
+WORKDIR /app
+
+# Copiar dependências do stage anterior
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copiar código fonte
+COPY . .
+
+# Executar validação antes do build
+RUN node validate-build.js
+
+# Desabilitar telemetria do Next.js
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build da aplicação
+RUN pnpm build
+
+# ===== STAGE 3: Imagem de produção =====
+FROM base AS runner
+
+WORKDIR /app
+
+# Criar usuário não-root para segurança
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copiar arquivos necessários para produção
+COPY --from=builder /app/public ./public
+
+# Copiar build output
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Definir usuário
+USER nextjs
+
+# Expor porta
+EXPOSE 3000
+
+# Variáveis de ambiente
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Comando para iniciar
+CMD ["node", "server.js"]

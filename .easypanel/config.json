@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "app": {
+    "name": "gerenciador-visitas",
+    "displayName": "Gerenciador de Visitas Técnicas",
+    "description": "Sistema otimizado para acompanhamento de visitas técnicas com timeline interativa",
+    "icon": "🚗",
+    "category": "business"
+  },
+  "build": {
+    "type": "docker",
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "buildArgs": {
+      "NODE_ENV": "production"
+    }
+  },
+  "deploy": {
+    "replicas": 1,
+    "strategy": "rolling",
+    "resources": {
+      "requests": {
+        "memory": "256Mi",
+        "cpu": "250m"
+      },
+      "limits": {
+        "memory": "512Mi",
+        "cpu": "500m"
+      }
+    }
+  },
+  "networking": {
+    "ports": [
+      {
+        "name": "http",
+        "port": 3000,
+        "protocol": "TCP"
+      }
+    ],
+    "ingress": {
+      "enabled": true,
+      "className": "nginx",
+      "annotations": {
+        "nginx.ingress.kubernetes.io/ssl-redirect": "true",
+        "nginx.ingress.kubernetes.io/force-ssl-redirect": "true"
+      }
+    }
+  },
+  "monitoring": {
+    "healthCheck": {
+      "enabled": true,
+      "path": "/api/health",
+      "port": 3000,
+      "initialDelaySeconds": 30,
+      "periodSeconds": 10,
+      "timeoutSeconds": 5,
+      "failureThreshold": 3
+    },
+    "metrics": {
+      "enabled": false
+    }
+  },
+  "environment": {
+    "NODE_ENV": "production",
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "PORT": "3000",
+    "HOSTNAME": "0.0.0.0"
+  }
+}

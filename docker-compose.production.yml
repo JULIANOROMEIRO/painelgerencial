@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  gerenciador-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: gerenciador-production
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - API_BASE_URL=https://www.centralretencao.com.br/GRelator/api/v1/relatorios
+      - API_TIMEOUT=120000
+    restart: unless-stopped
+    networks:
+      - gerenciador-prod-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gerenciador-prod.rule=Host(`gerenciador.exemplo.com`)"
+      - "traefik.http.routers.gerenciador-prod.tls=true"
+      - "traefik.http.services.gerenciador-prod.loadbalancer.server.port=3000"
+
+networks:
+  gerenciador-prod-network:
+    driver: bridge

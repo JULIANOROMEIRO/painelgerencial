@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  gerenciador-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: gerenciador-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    volumes:
+      # Volume para hot reload - mapear código fonte
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    restart: unless-stopped
+    networks:
+      - gerenciador-dev-network
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  gerenciador-dev-network:
+    driver: bridge

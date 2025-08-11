@@ -1,0 +1,55 @@
+# Dockerfile para debug - mostra todos os arquivos
+FROM node:18-alpine
+
+# Instalar curl para health check
+RUN apk add --no-cache curl tree
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar package.json
+COPY package.json ./
+
+# Instalar dependências (incluindo dev para build)
+RUN npm install
+
+# Copiar arquivos de configuração
+COPY tsconfig.json ./
+COPY next.config.mjs ./
+COPY tailwind.config.ts ./
+COPY postcss.config.mjs ./
+COPY components.json ./
+
+# Copiar todo o código fonte
+COPY . .
+
+# Debug: Mostrar estrutura completa
+RUN echo "=== ESTRUTURA COMPLETA DO PROJETO ===" && \
+    tree -a -L 3 || ls -la -R
+
+# Debug: Verificar arquivos específicos
+RUN echo "=== VERIFICANDO COMPONENTES UI ===" && \
+    ls -la components/ui/ && \
+    echo "=== CONTEÚDO DO TSCONFIG ===" && \
+    cat tsconfig.json && \
+    echo "=== VERIFICANDO IMPORTS NO APP/PAGE.TSX ===" && \
+    head -20 app/page.tsx
+
+# Build da aplicação com logs detalhados
+RUN npm run build
+
+# Expor porta
+EXPOSE 3000
+
+# Definir variáveis de ambiente
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:3000 || exit 1
+
+# Comando para iniciar
+CMD ["npm", "start"]

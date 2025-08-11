@@ -1,0 +1,30 @@
+{
+  "name": "gerenciador-visitas",
+  "version": "1.0.0",
+  "description": "Sistema de Gerenciamento de Visitas Técnicas",
+  "type": "app",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "startCommand": "npm start",
+  "installCommand": "npm ci",
+  "environment": {
+    "NODE_ENV": "production",
+    "PORT": "3000"
+  },
+  "domains": [
+    {
+      "name": "gerenciador.seudominio.com",
+      "port": 3000
+    }
+  ],
+  "resources": {
+    "memory": "1Gi",
+    "cpu": "1000m"
+  },
+  "healthCheck": {
+    "path": "/",
+    "port": 3000,
+    "initialDelaySeconds": 60,
+    "periodSeconds": 30
+  }
+}
